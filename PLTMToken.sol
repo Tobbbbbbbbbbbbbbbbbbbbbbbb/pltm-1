@@ -33,6 +33,12 @@ contract PLTMToken {
 		uint256 _value
 	);
 
+	event ApprovalVote(
+		address indexed _owner,
+		address indexed _spender,
+		uint256 _value
+	);
+
 	//mappings are hashtables
 
 	//Address is the key, uint256 is the return value of said key
@@ -42,6 +48,13 @@ contract PLTMToken {
 
 	//Will keep track of the amount that the first address approves the second address to spend
 	mapping(address => mapping(address => uint256)) allowance;
+
+	//Will keep track of who owns what amount of votes
+	//Default value is 0
+	mapping(address => uint256) balanceOfVote;
+
+	//Will keep track of the amount that the first address approves the second address to spend on voting
+	mapping(address => mapping(address => uint256)) allowanceVote;
 
 	//local variables use "_"
 
@@ -64,6 +77,8 @@ contract PLTMToken {
 		//add _value to the receiver's address
 		balanceOf[msg.sender] -= _value;
 		balanceOf[_to] += _value;
+		balanceOfVote[msg.sender] -= _value;
+		balanceOfVote[_to] += _value;
 
 		//Transfer event triggers
 		emit Transfer(msg.sender, _to, _value);
@@ -101,6 +116,9 @@ contract PLTMToken {
 		balanceOf[_from] -= _value;
 		allowance[_from][_to] -= _value;
 		balanceOf[_to] += _value;
+		balanceOfVote[_from] -= _value;
+		allowanceVote[_from][_to] -= _value;
+		balanceOfVote[_to] += _value;
 
 		//Transfer event triggers
 		emit Transfer(_from, _to, _value);
@@ -114,11 +132,32 @@ contract PLTMToken {
 	}
 
 	function balanceOf(address _owner) public view returns (uint256 balance) {
-		return balanceOf[_owner]
+		return balanceOf[_owner];
 	}
 
 	function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
 		return allowance[_owner][_spender];
+	}
+
+	//Approves the fact that another user can spend one user's votes
+	function approveVotes(address _spender, uint256 _value) public returns (bool success) {
+
+		//sets the value that the sender is authorizing the spender to spend
+		allowanceVote[msg.sender][_spender] = _value;
+
+		//Changes how many votes each party gets
+		balanceOfVote[msg.sender] -= _value;
+		balanceOfVote[_spender] += _value;
+
+		//Approval event triggers
+		emit ApprovalVote(msg.sender, _spender, _value);
+
+		//returns true;
+		return true;
+	}
+
+	function balanceOfVote(address _owner) public view returns (uint256 balance) {
+		return balanceOfVote[_owner];
 	}
 
 }
